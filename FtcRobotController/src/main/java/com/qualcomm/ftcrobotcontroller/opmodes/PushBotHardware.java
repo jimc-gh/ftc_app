@@ -277,7 +277,7 @@ public class PushBotHardware extends OpMode
         //
         // Assume no scaling.
         //
-        float l_scale = 0.0f;
+        float l_scale;
 
         //
         // Ensure the values are legal.
