@@ -305,19 +305,20 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
 
      */
 
-	final static double P_GAIN  = 0.1;
-	final static double I_GAIN  = 0.1;
-	final static double D_GAIN  = 0.1;
+	final static double P_GAIN  = 0.2;
+	final static double I_GAIN  = 0.01;
+	final static double D_GAIN  = -0.01;
 
 
 	private double PID_MotorLD_Rate(double input)
 	{
         long TempLDCountDelta;
-        double TempLDRate;
-        double Proportional;
+        double Proportional,Integral,Derivative;
+        double Err;
 
 
         // calculate time since we last executed this function
+        // in Seconds
         LDRuntimeDelta = this.getRuntime() - LDlastRuntime;
         LDlastRuntime = this.getRuntime();
 
@@ -327,10 +328,13 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
         TempLDCountDelta = LDEncoderCount - LastLDEncoderCount;
         LastLDEncoderCount = LDEncoderCount;
 
-        // calculate the rate of encoder ticks and then filter a bit
-        TempLDRate = (double)TempLDCountDelta / LDRuntimeDelta;
-//        LDRate = (0.1 * TempLDRate) + (0.9 * LastLDRate);
-        LDRate = TempLDRate;
+        // calculate the rate of encoder ticks (in ticks / second)
+        LDRate = (double)TempLDCountDelta / LDRuntimeDelta;
+
+
+        // calculate the derivative of rate for the D calculation
+        dLDRate = (double)(LDRate - LastLDRate) / LDRuntimeDelta;
+
         LastLDRate = LDRate;
 
         // 'LDRate' is the PV -- Process Variable
@@ -344,8 +348,21 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
         // 0.1 * MAX_MOTOR_RATE = 300
 
 
-        Proportional += P_GAIN * (((input * MAX_MOTOR_RATE) - LDRate) / MAX_MOTOR_RATE);
 
+        // Calculate the error
+        // the setpoint is input as a fraction -1.0 to 1.0
+        // LDRate is a number -MAX_MOTOR_RATE to MAX_MOTOR_RATE
+        Err = input - (LDRate / MAX_MOTOR_RATE);
+        iLDRateErr += Err;
+
+        Proportional = P_GAIN * Err;
+
+        Derivative = D_GAIN * dLDRate;
+
+        Integral = I_GAIN * iLDRateErr;
+        
+
+        // double Proportional,Integral,Derivative;
 
 
         LDPower += 0.03 * (((input * MAX_MOTOR_RATE) - LDRate) / MAX_MOTOR_RATE);
@@ -758,7 +775,7 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
     private String v_warning_message;
 
     private long counter;
-    private double LDRate,RDRate,LastLDRate,LastRDRate;
+    private double LDRate,RDRate,LastLDRate,LastRDRate,dLDRate,dRDRate,iLDRateErr,iRDRateErr;
     private long LastLDEncoderCount,LastRDEncoderCount;
     private double LDPower;
     private double RDPower;
