@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.util.Range;
 
 public class rrEncoder extends OpMode {
 
+	final static double MAX_MOTOR_RATE  = 3000.0;
 
     /**
      * Constructor
@@ -36,6 +37,8 @@ public class rrEncoder extends OpMode {
     {
 
         counter = 0;
+
+
         //
         // Use the hardwareMap to associate class members to hardware ports.
         //
@@ -145,6 +148,10 @@ public class rrEncoder extends OpMode {
     {
 
         counter = counter + 1;
+
+
+
+
         //----------------------------------------------------------------------
         //
         // DC Motors
@@ -169,12 +176,11 @@ public class rrEncoder extends OpMode {
         double l_left_drive_power = scale_0_to_1(-gamepad1.left_stick_y);
         double l_right_drive_power = scale_0_to_1(-gamepad1.right_stick_y);
 
-        if (v_motor_left_drive != null) {
-            v_motor_left_drive.setPower(l_left_drive_power);
-        }
-        if (v_motor_right_drive != null) {
-            v_motor_right_drive.setPower(l_right_drive_power);
-        }
+
+
+        PID_MotorLD_Rate(l_left_drive_power);
+        PID_MotorRD_Rate(l_right_drive_power);
+
 
         /*
         if (v_motor_left_drive != null)
@@ -286,6 +292,167 @@ public class rrEncoder extends OpMode {
 	}
 
 
+    //
+    // scale_motor_power
+    //
+    /**
+     * Take input 0-1, adjust rate with PID feedback.
+     * 
+Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in between.
+
+
+
+
+     */
+
+	final static double P_GAIN  = 0.1;
+	final static double I_GAIN  = 0.1;
+	final static double D_GAIN  = 0.1;
+
+
+	private double PID_MotorLD_Rate(double input)
+	{
+        long TempLDCountDelta;
+        double TempLDRate;
+        double Proportional;
+
+
+        // calculate time since we last executed this function
+        LDRuntimeDelta = this.getRuntime() - LDlastRuntime;
+        LDlastRuntime = this.getRuntime();
+
+
+        // find out how many encoder ticks occurred since we last executed this function
+        long LDEncoderCount = get_left_encoder_count();
+        TempLDCountDelta = LDEncoderCount - LastLDEncoderCount;
+        LastLDEncoderCount = LDEncoderCount;
+
+        // calculate the rate of encoder ticks and then filter a bit
+        TempLDRate = (double)TempLDCountDelta / LDRuntimeDelta;
+//        LDRate = (0.1 * TempLDRate) + (0.9 * LastLDRate);
+        LDRate = TempLDRate;
+        LastLDRate = LDRate;
+
+        // 'LDRate' is the PV -- Process Variable
+        // 'input' is the SP -- SetPoint
+        // 'LDPower' is the OP -- OutPut
+
+        // set the power proportionately to match the input.
+        // input is 0 - 1
+        // 
+        // say the requested rate is 0.1, then the target LDRate is
+        // 0.1 * MAX_MOTOR_RATE = 300
+
+
+        Proportional += P_GAIN * (((input * MAX_MOTOR_RATE) - LDRate) / MAX_MOTOR_RATE);
+
+
+
+        LDPower += 0.03 * (((input * MAX_MOTOR_RATE) - LDRate) / MAX_MOTOR_RATE);
+        if(LDPower > 1.0)
+        {
+            LDPower = 1.0;
+        }
+        if(LDPower < -1.0)
+        {
+            LDPower = -1.0;
+        }
+
+        if (v_motor_left_drive != null) {
+            v_motor_left_drive.setPower(LDPower);
+//            v_motor_left_drive.setPower(0.1);
+        }
+
+
+        return 0.0;
+
+	}
+
+
+	private double PID_MotorRD_Rate(double input)
+	{
+        long TempRDCountDelta;
+        double TempRDRate;
+
+
+        // calculate time since we last executed this function
+        RDRuntimeDelta = this.getRuntime() - RDlastRuntime;
+        RDlastRuntime = this.getRuntime();
+
+
+        // find out how many encoder ticks occurred since we last executed this function
+        long RDEncoderCount = get_right_encoder_count();
+        TempRDCountDelta = RDEncoderCount - LastRDEncoderCount;
+        LastRDEncoderCount = RDEncoderCount;
+
+        // calculate the rate of encoder ticks and then filter a bit
+        TempRDRate = (double)TempRDCountDelta / RDRuntimeDelta;
+//        RDRate = (0.1 * TempRDRate) + (0.9 * LastRDRate);
+        RDRate = TempRDRate;
+        LastRDRate = RDRate;
+
+
+        // set the power proportionately to match the input.
+        // input is 0 - 1
+        // 
+        // say the requested rate is 0.1, then the target LDRate is
+        // 0.1 * MAX_MOTOR_RATE = 300
+
+        RDPower += 0.03 * (((input * MAX_MOTOR_RATE) - RDRate) / MAX_MOTOR_RATE);
+        if(RDPower > 1.0)
+        {
+            RDPower = 1.0;
+        }
+        if(RDPower < -1.0)
+        {
+            RDPower = -1.0;
+        }
+
+        if (v_motor_right_drive != null) {
+            v_motor_right_drive.setPower(RDPower);
+//            v_motor_left_drive.setPower(0.1);
+        }
+
+
+        return 0.0;
+
+	}
+
+
+//	private double PID_MotorRD_Rate(double input)
+//	{
+//        long TempRDCountDelta;
+//
+//        double TempRDRate;
+//
+//        // calculate time since we last executed this function
+//        RDRuntimeDelta = this.getRuntime() - RDlastRuntime;
+//        RDlastRuntime = this.getRuntime();
+//
+//
+//        long RDEncoderCount = get_right_encoder_count();
+//        TempRDCountDelta = RDEncoderCount - LastRDEncoderCount;
+//        LastRDEncoderCount = RDEncoderCount;
+//
+//
+//        TempRDRate = (double)TempRDCountDelta / RDRuntimeDelta;
+//
+//        RDRate = (0.1 * TempRDRate) + (0.9 * LastRDRate);
+//        LastRDRate = RDRate;
+//
+//
+//        if (v_motor_right_drive != null) {
+//            v_motor_right_drive.setPower(input);
+//        }
+//
+//
+//
+//        return 0.0;
+//
+//	}
+
+
+
 //    float scale_motor_power (float p_power)
 //    {
 //        //
@@ -350,23 +517,45 @@ public class rrEncoder extends OpMode {
         // Send telemetry data to the driver station.
         //
         telemetry.addData
-                ( "01"
+                ( "t01"
                         , "Left Drive: "
                                 + get_left_drive_power ()
                                 + ", "
                                 + get_left_encoder_count ()
                 );
         telemetry.addData
-                ( "02"
+                ( "t02"
+                        , "Left Drive Rate: "
+                                + LDRate
+                );
+        telemetry.addData
+                ( "t03"
                         , "Right Drive: "
                                 + get_right_drive_power ()
                                 + ", "
                                 + get_right_encoder_count ()
                 );
         telemetry.addData
-                ( "03"
-                        , "Loop Counter: "
-                                + counter
+                ( "t04"
+                        , "Right Drive Rate: "
+                                + RDRate
+                );
+        telemetry.addData
+                ( "t05"
+                        , "Run time: "
+                                + this.getRuntime()
+                );
+        telemetry.addData
+                ( "t06"
+                        , "Run time Delta: "
+                                + LDRuntimeDelta
+                );
+
+
+        telemetry.addData
+                ( "t07"
+                        , "LDPower: "
+                                + LDPower
                 );
 
 
@@ -539,7 +728,10 @@ public class rrEncoder extends OpMode {
     } // get_right_drive_power
 
 
-
+    private double LDRuntimeDelta;
+    private double RDRuntimeDelta;
+    private double LDlastRuntime;
+    private double RDlastRuntime;
 
 
 
@@ -566,5 +758,9 @@ public class rrEncoder extends OpMode {
     private String v_warning_message;
 
     private long counter;
+    private double LDRate,RDRate,LastLDRate,LastRDRate;
+    private long LastLDEncoderCount,LastRDEncoderCount;
+    private double LDPower;
+    private double RDPower;
 
 }
