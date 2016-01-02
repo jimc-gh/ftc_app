@@ -72,7 +72,7 @@ public class aaronOp extends OpMode {
     double clawDelta = 0.1;
 
     DcMotor motorRight;
-//    DcMotor motorLeft;
+    DcMotor motorLeft;
 //    Servo claw;
 //    Servo arm;
 
@@ -108,7 +108,7 @@ public class aaronOp extends OpMode {
 		 *    "servo_1" controls the arm joint of the manipulator.
 		 *    "servo_6" controls the claw joint of the manipulator.
 		 */
-        //motorRight = hardwareMap.dcMotor.get("motor_2");
+        motorLeft = hardwareMap.dcMotor.get("motor2");
         motorRight = hardwareMap.dcMotor.get("motor1");
         motorRight.setDirection(DcMotor.Direction.REVERSE);
 		/*
@@ -155,7 +155,7 @@ public class aaronOp extends OpMode {
         left =  (float)scaleInput(left);
 
         // write the values to the motors
-        //motorRight.setPower(right);
+        motorLeft.setPower(right);
         motorRight.setPower(left);
 
         // update the position of the arm.

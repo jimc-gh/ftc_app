@@ -4,17 +4,18 @@ import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorController;
-import com.qualcomm.robotcore.util.Range;
+//import com.qualcomm.robotcore.util.Range;
 
 
 
 /**
  * Created by johnson on 12/22/15.
+ * New template comment.
  */
 
 public class rrEncoder extends OpMode {
 
-	final static double MAX_MOTOR_RATE  = 3000.0;
+//	final static double MAX_MOTOR_RATE  = 3000.0;
 
     /**
      * Constructor
@@ -36,7 +37,9 @@ public class rrEncoder extends OpMode {
     public void init()
     {
 
-        counter = 0;
+//        counter = 0;
+        LDPosition = LDDelta =
+        RDPosition = RDDelta = 0.0;
 
 
         //
@@ -70,7 +73,8 @@ public class rrEncoder extends OpMode {
 
         if (v_motor_left_drive != null)
         {
-            v_motor_left_drive.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+//            v_motor_left_drive.setMode(DcMotorController.RunMode.RUN_USING_ENCODERS);
+            v_motor_left_drive.setMode(DcMotorController.RunMode.RUN_TO_POSITION);
         }
 
 
@@ -147,7 +151,13 @@ public class rrEncoder extends OpMode {
     public void loop()
     {
 
-        counter = counter + 1;
+//        counter = counter + 1;
+
+//    private double LDPosition, LDDelta;
+//    private double RDPosition, RDDelta;
+
+
+
 
 
 
@@ -173,13 +183,44 @@ public class rrEncoder extends OpMode {
         //
         // Manage the drive wheel motors.
         //
-        double l_left_drive_power = scale_0_to_1(-gamepad1.left_stick_y);
-        double l_right_drive_power = scale_0_to_1(-gamepad1.right_stick_y);
+//        double l_left_drive_power = scale_0_to_1(-gamepad1.left_stick_y);
+//        double l_right_drive_power = scale_0_to_1(-gamepad1.right_stick_y);
 
 
+        LDDelta = 100.0 * scale_0_to_1(-gamepad1.left_stick_y);
+        RDDelta = 100.0 * scale_0_to_1(-gamepad1.right_stick_y);
 
-        PID_MotorLD_Rate(l_left_drive_power);
-        PID_MotorRD_Rate(l_right_drive_power);
+        LDPosition += LDDelta;
+        RDPosition += RDDelta;
+
+ 
+
+//        if (v_motor_left_drive != null)
+//        {
+////            v_motor_left_drive.setTargetPosition((int)LDPosition);
+//            v_motor_left_drive.setPower(scale_0_to_1(-gamepad1.left_stick_y));
+//        }
+
+
+        if (
+                v_motor_left_drive != null
+
+                
+           )
+        {
+//            v_motor_left_drive.setTargetPosition((int)LDPosition);
+            v_motor_left_drive.setTargetPosition((int)(1120.0 * scale_0_to_1(-gamepad1.left_stick_y)));
+            v_motor_left_drive.setPower(0.5);
+        }
+
+
+        if (v_motor_right_drive != null)
+        {
+            v_motor_right_drive.setPower(scale_0_to_1(-gamepad1.right_stick_y));
+        }
+
+//        PID_MotorLD_Rate(l_left_drive_power);
+//        PID_MotorRD_Rate(l_right_drive_power);
 
 
         /*
@@ -305,163 +346,130 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
 
      */
 
-	final static double P_GAIN  = 0.2;
-	final static double I_GAIN  = 0.01;
-	final static double D_GAIN  = -0.01;
-
-
-	private double PID_MotorLD_Rate(double input)
-	{
-        long TempLDCountDelta;
-        double Proportional,Integral,Derivative;
-        double Err;
-
-
-        // calculate time since we last executed this function
-        // in Seconds
-        LDRuntimeDelta = this.getRuntime() - LDlastRuntime;
-        LDlastRuntime = this.getRuntime();
-
-
-        // find out how many encoder ticks occurred since we last executed this function
-        long LDEncoderCount = get_left_encoder_count();
-        TempLDCountDelta = LDEncoderCount - LastLDEncoderCount;
-        LastLDEncoderCount = LDEncoderCount;
-
-        // calculate the rate of encoder ticks (in ticks / second)
-        LDRate = (double)TempLDCountDelta / LDRuntimeDelta;
-
-
-        // calculate the derivative of rate for the D calculation
-        dLDRate = (double)(LDRate - LastLDRate) / LDRuntimeDelta;
-
-        LastLDRate = LDRate;
-
-        // 'LDRate' is the PV -- Process Variable
-        // 'input' is the SP -- SetPoint
-        // 'LDPower' is the OP -- OutPut
-
-        // set the power proportionately to match the input.
-        // input is 0 - 1
-        // 
-        // say the requested rate is 0.1, then the target LDRate is
-        // 0.1 * MAX_MOTOR_RATE = 300
-
-
-
-        // Calculate the error
-        // the setpoint is input as a fraction -1.0 to 1.0
-        // LDRate is a number -MAX_MOTOR_RATE to MAX_MOTOR_RATE
-        Err = input - (LDRate / MAX_MOTOR_RATE);
-        iLDRateErr += Err;
-
-        Proportional = P_GAIN * Err;
-
-        Derivative = D_GAIN * dLDRate;
-
-        Integral = I_GAIN * iLDRateErr;
-        
-
-        // double Proportional,Integral,Derivative;
-
-
-        LDPower += 0.03 * (((input * MAX_MOTOR_RATE) - LDRate) / MAX_MOTOR_RATE);
-        if(LDPower > 1.0)
-        {
-            LDPower = 1.0;
-        }
-        if(LDPower < -1.0)
-        {
-            LDPower = -1.0;
-        }
-
-        if (v_motor_left_drive != null) {
-            v_motor_left_drive.setPower(LDPower);
-//            v_motor_left_drive.setPower(0.1);
-        }
-
-
-        return 0.0;
-
-	}
-
-
-	private double PID_MotorRD_Rate(double input)
-	{
-        long TempRDCountDelta;
-        double TempRDRate;
-
-
-        // calculate time since we last executed this function
-        RDRuntimeDelta = this.getRuntime() - RDlastRuntime;
-        RDlastRuntime = this.getRuntime();
-
-
-        // find out how many encoder ticks occurred since we last executed this function
-        long RDEncoderCount = get_right_encoder_count();
-        TempRDCountDelta = RDEncoderCount - LastRDEncoderCount;
-        LastRDEncoderCount = RDEncoderCount;
-
-        // calculate the rate of encoder ticks and then filter a bit
-        TempRDRate = (double)TempRDCountDelta / RDRuntimeDelta;
-//        RDRate = (0.1 * TempRDRate) + (0.9 * LastRDRate);
-        RDRate = TempRDRate;
-        LastRDRate = RDRate;
-
-
-        // set the power proportionately to match the input.
-        // input is 0 - 1
-        // 
-        // say the requested rate is 0.1, then the target LDRate is
-        // 0.1 * MAX_MOTOR_RATE = 300
-
-        RDPower += 0.03 * (((input * MAX_MOTOR_RATE) - RDRate) / MAX_MOTOR_RATE);
-        if(RDPower > 1.0)
-        {
-            RDPower = 1.0;
-        }
-        if(RDPower < -1.0)
-        {
-            RDPower = -1.0;
-        }
-
-        if (v_motor_right_drive != null) {
-            v_motor_right_drive.setPower(RDPower);
-//            v_motor_left_drive.setPower(0.1);
-        }
-
-
-        return 0.0;
-
-	}
-
-
+//	final static double P_GAIN  = 0.2;
+//	final static double I_GAIN  = 0.01;
+//	final static double D_GAIN  = -0.01;
+//
+//
+//	private double PID_MotorLD_Rate(double input)
+//	{
+//        long TempLDCountDelta;
+//        double Proportional,Integral,Derivative;
+//        double Err;
+//
+//
+//        // calculate time since we last executed this function
+//        // in Seconds
+//        LDRuntimeDelta = this.getRuntime() - LDlastRuntime;
+//        LDlastRuntime = this.getRuntime();
+//
+//
+//        // find out how many encoder ticks occurred since we last executed this function
+//        long LDEncoderCount = get_left_encoder_count();
+//        TempLDCountDelta = LDEncoderCount - LastLDEncoderCount;
+//        LastLDEncoderCount = LDEncoderCount;
+//
+//        // calculate the rate of encoder ticks (in ticks / second)
+//        LDRate = (double)TempLDCountDelta / LDRuntimeDelta;
+//
+//
+//        // calculate the derivative of rate for the D calculation
+//        dLDRate = (double)(LDRate - LastLDRate) / LDRuntimeDelta;
+//
+//        LastLDRate = LDRate;
+//
+//        // 'LDRate' is the PV -- Process Variable
+//        // 'input' is the SP -- SetPoint
+//        // 'LDPower' is the OP -- OutPut
+//
+//        // set the power proportionately to match the input.
+//        // input is 0 - 1
+//        // 
+//        // Lzzsay the requested rate is 0.1, then the target LDRate is
+//        // 0.1 * MAX_MOTOR_RATE = 300
+//
+//
+//
+//        // Calculate the error
+//        // the setpoint is input as a fraction -1.0 to 1.0
+//        // LDRate is a number -MAX_MOTOR_RATE to MAX_MOTOR_RATE
+//        Err = input - (LDRate / MAX_MOTOR_RATE);
+//        iLDRateErr += Err;
+//
+//        Proportional = P_GAIN * Err;
+//
+//        Derivative = D_GAIN * dLDRate;
+//
+//        Integral = I_GAIN * iLDRateErr;
+//        
+//
+//        // double Proportional,Integral,Derivative;
+//
+//
+//        LDPower += 0.03 * (((input * MAX_MOTOR_RATE) - LDRate) / MAX_MOTOR_RATE);
+//        if(LDPower > 1.0)
+//        {
+//            LDPower = 1.0;
+//        }
+//        if(LDPower < -1.0)
+//        {
+//            LDPower = -1.0;
+//        }
+//
+//        if (v_motor_left_drive != null) {
+//            v_motor_left_drive.setPower(LDPower);
+////            v_motor_left_drive.setPower(0.1);
+//        }
+//
+//
+//        return 0.0;
+//
+//	}
+//
+//
 //	private double PID_MotorRD_Rate(double input)
 //	{
 //        long TempRDCountDelta;
-//
 //        double TempRDRate;
+//
 //
 //        // calculate time since we last executed this function
 //        RDRuntimeDelta = this.getRuntime() - RDlastRuntime;
 //        RDlastRuntime = this.getRuntime();
 //
 //
+//        // find out how many encoder ticks occurred since we last executed this function
 //        long RDEncoderCount = get_right_encoder_count();
 //        TempRDCountDelta = RDEncoderCount - LastRDEncoderCount;
 //        LastRDEncoderCount = RDEncoderCount;
 //
-//
+//        // calculate the rate of encoder ticks and then filter a bit
 //        TempRDRate = (double)TempRDCountDelta / RDRuntimeDelta;
-//
-//        RDRate = (0.1 * TempRDRate) + (0.9 * LastRDRate);
+////        RDRate = (0.1 * TempRDRate) + (0.9 * LastRDRate);
+//        RDRate = TempRDRate;
 //        LastRDRate = RDRate;
 //
 //
-//        if (v_motor_right_drive != null) {
-//            v_motor_right_drive.setPower(input);
+//        // set the power proportionately to match the input.
+//        // input is 0 - 1
+//        // 
+//        // say the requested rate is 0.1, then the target LDRate is
+//        // 0.1 * MAX_MOTOR_RATE = 300
+//
+//        RDPower += 0.03 * (((input * MAX_MOTOR_RATE) - RDRate) / MAX_MOTOR_RATE);
+//        if(RDPower > 1.0)
+//        {
+//            RDPower = 1.0;
+//        }
+//        if(RDPower < -1.0)
+//        {
+//            RDPower = -1.0;
 //        }
 //
+//        if (v_motor_right_drive != null) {
+//            v_motor_right_drive.setPower(RDPower);
+////            v_motor_left_drive.setPower(0.1);
+//        }
 //
 //
 //        return 0.0;
@@ -470,50 +478,8 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
 
 
 
-//    float scale_motor_power (float p_power)
-//    {
-//        //
-//        // Assume no scaling.
-//        //
-//        float l_scale;
-//
-//        //
-//        // Ensure the values are legal.
-//        //
-//        float l_power = Range.clip(p_power, -1, 1);
-//
-//        float[] l_array =
-//                { 0.00f, 0.05f, 0.09f, 0.10f, 0.12f
-//                        , 0.15f, 0.18f, 0.24f, 0.30f, 0.36f
-//                        , 0.43f, 0.50f, 0.60f, 0.72f, 0.85f
-//                        , 1.00f, 1.00f
-//                };
-//
-//        //
-//        // Get the corresponding index for the specified argument/parameter.
-//        //
-//        int l_index = (int)(l_power * 16.0);
-//        if (l_index < 0)
-//        {
-//            l_index = -l_index;
-//        }
-//        else if (l_index > 16)
-//        {
-//            l_index = 16;
-//        }
-//
-//        if (l_power < 0)
-//        {
-//            l_scale = -l_array[l_index];
-//        }
-//        else
-//        {
-//            l_scale = l_array[l_index];
-//        }
-//
-//        return l_scale;
-//
-//    } // scale_motor_power
+
+
 
 
     //--------------------------------------------------------------------------
@@ -542,8 +508,8 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
                 );
         telemetry.addData
                 ( "t02"
-                        , "Left Drive Rate: "
-                                + LDRate
+                        , "LD Position: "
+                                + LDPosition
                 );
         telemetry.addData
                 ( "t03"
@@ -554,26 +520,26 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
                 );
         telemetry.addData
                 ( "t04"
-                        , "Right Drive Rate: "
-                                + RDRate
+                        , "RD Position: "
+                                + RDPosition
                 );
-        telemetry.addData
-                ( "t05"
-                        , "Run time: "
-                                + this.getRuntime()
-                );
-        telemetry.addData
-                ( "t06"
-                        , "Run time Delta: "
-                                + LDRuntimeDelta
-                );
-
-
-        telemetry.addData
-                ( "t07"
-                        , "LDPower: "
-                                + LDPower
-                );
+//        telemetry.addData
+//                ( "t05"
+//                        , "Run time: "
+//                                + this.getRuntime()
+//                );
+//        telemetry.addData
+//                ( "t06"
+//                        , "Run time Delta: "
+//                                + LDRuntimeDelta
+//                );
+//
+//
+//        telemetry.addData
+//                ( "t07"
+//                        , "LDPower: "
+//                                + LDPower
+//                );
 
 
     } // update_telemetry
@@ -745,16 +711,6 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
     } // get_right_drive_power
 
 
-    private double LDRuntimeDelta;
-    private double RDRuntimeDelta;
-    private double LDlastRuntime;
-    private double RDlastRuntime;
-
-
-
-
-    private DcMotor v_motor_left_drive;
-    private DcMotor v_motor_right_drive;
 
     //--------------------------------------------------------------------------
     //
@@ -774,10 +730,22 @@ Loop hits approx every 10mS, sometimes 8mS, sometimes 30mS or anywhere in betwee
      */
     private String v_warning_message;
 
-    private long counter;
-    private double LDRate,RDRate,LastLDRate,LastRDRate,dLDRate,dRDRate,iLDRateErr,iRDRateErr;
-    private long LastLDEncoderCount,LastRDEncoderCount;
-    private double LDPower;
-    private double RDPower;
+//    private long counter;
+//    private double LDRate,RDRate,LastLDRate,LastRDRate,dLDRate,dRDRate,iLDRateErr,iRDRateErr;
+//    private long LastLDEncoderCount,LastRDEncoderCount;
+//    private double LDPower;
+//    private double RDPower;
+//    private double LDRuntimeDelta;
+//    private double RDRuntimeDelta;
+//    private double LDlastRuntime;
+//    private double RDlastRuntime;
+
+    private double LDPosition, LDDelta;
+    private double RDPosition, RDDelta;
+
+
+
+    private DcMotor v_motor_left_drive;
+    private DcMotor v_motor_right_drive;
 
 }
