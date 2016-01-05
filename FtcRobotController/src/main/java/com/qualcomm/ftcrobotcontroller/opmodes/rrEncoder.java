@@ -322,7 +322,7 @@ public class rrEncoder extends OpMode {
 
 
 
-        if(negative == true)
+        if(negative)
         {
             return -speed;
         }

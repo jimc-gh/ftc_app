@@ -51,7 +51,7 @@ public class aaronOp extends OpMode {
     /*
      * Note: the configuration of the servos is such that
      * as the arm servo approaches 0, the arm position moves up (away from the floor).
-     * Also, as the claw servo approaches 0, the claw opens up (drops the game element).
+     * Also, as e claw servo approaches 0, the claw opens up (drops the game element).
      */
     // TETRIX VALUES.
     final static double ARM_MIN_RANGE  = 0.20;
@@ -140,10 +140,24 @@ public class aaronOp extends OpMode {
         // 1 is full down
         // direction: left_stick_x ranges from -1 to 1, where -1 is full left
         // and 1 is full right
+/*
         float throttle = -gamepad1.left_stick_y;
         float direction = gamepad1.left_stick_x;
         float right = throttle - direction;
         float left = throttle + direction;
+
+        // clip the right/left values so that the values never exceed +/- 1
+        right = Range.clip(right, -1, 1);
+        left = Range.clip(left, 1, -1);
+
+        // scale the joystick value to make it easier to control
+        // the robot more precisely at slower speeds.
+        right = (float)scaleInput(right);
+        left =  (float)scaleInput(left);
+*/
+
+        float left = -gamepad1.left_stick_y;
+        float right = -gamepad1.right_stick_y;
 
         // clip the right/left values so that the values never exceed +/- 1
         right = Range.clip(right, -1, 1);
@@ -155,8 +169,10 @@ public class aaronOp extends OpMode {
         left =  (float)scaleInput(left);
 
         // write the values to the motors
-        motorLeft.setPower(right);
-        motorRight.setPower(left);
+
+        motorRight.setPower(right);
+        motorLeft.setPower(left);
+
 
         // update the position of the arm.
 		/*
@@ -204,8 +220,10 @@ public class aaronOp extends OpMode {
         telemetry.addData("arm", "arm:  " + String.format("%.2f", armPosition));
         telemetry.addData("claw", "claw:  " + String.format("%.2f", clawPosition));
         */
+
         telemetry.addData("left tgt pwr",  "left  pwr: " + String.format("%.2f", left));
-        //telemetry.addData("right tgt pwr", "right pwr: " + String.format("%.2f", right));
+        telemetry.addData("right tgt pwr", "right pwr: " + String.format("%.2f", right));
+
 
     }
 

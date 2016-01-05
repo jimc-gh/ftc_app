@@ -150,7 +150,7 @@ public class K9TeleOp extends OpMode {
 		left =  (float)scaleInput(left);
 		
 		// write the values to the motors
-		//motorRight.setPower(right);
+		motorRight.setPower(right);
 		motorLeft.setPower(left);
 
 		// update the position of the arm.
