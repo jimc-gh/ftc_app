@@ -15,6 +15,12 @@ package com.qualcomm.ftcrobotcontroller.opmodes;
 public class PushBotAuto extends PushBotTelemetry
 
 {
+    // ??
+    private boolean v_warning_generated = false;
+
+    // ??
+    private String v_warning_message = "Can't map";
+
     //--------------------------------------------------------------------------
     //
     // PushBotAuto
